@@ -1,0 +1,26 @@
+ObjTree will display a GUI containing your objects and its items, you can also edit and save the content.
+
+Features:
+- Multiple windows support
+- - Enter or double click in ListView displays keys of selected object, press BackSpace to jump to parent object.
+- ListViews Checkbox will be ticked if key or value is an object and can be double clicked to be displayed.
+- ToolTip in TreeView shows contents of keys and first 20 keys and values of objects.
+- Optionally different ToolTipObject can be used to display custom values.
+- Selected key/object is highlighted in ListView when selected in TreeView
+- If IsObject(Key), there will be additional child node containing its keys/values. It will have same name (address) as Key.
+- - also the key will be selected in ListView rather than showing its keys/values in ListView.
+- - double click on such a key in ListView will also show its items
+
+
+Example:
+ hwnd:=ObjTree(Object [, Title, Options, ToolTipObject])
+
+  - hwnd = ahk_id of created window
+   - Object = object to show in Gui
+   - Title = Title for Gui
+   - Options separated by comma.
+   - - +/-ReadOnly[level] - level means from which depth on object will be editable.
+   - - Gui options
+   - - Font options, different to Gui options this requires Font=
+   - - Gui Show options, also GuiShow= is required
+   - ToolTipObject = ToolTipInfoObject containing the same structure as Object to show information when you hover a tree item with Mouse
