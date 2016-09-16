@@ -1,7 +1,9 @@
-﻿#include *i <LV>
+﻿;~ MsgBox % ObjTree([["a","b"],{(""):2}])
+;~ ExitApp
+#include *i <LV>
 ;~ #include <_Struct>
 
-ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",ishwnd=-1){
+ObjTree(ByRef obj,Title:="ObjTree",Options:="+ReadOnly +Resize,GuiShow=w640 h480",ishwnd:=-1){
 	; Version 1.0.1.0
 	static
 	; TREEOBJ will hold all running windows and some information about them
@@ -9,17 +11,17 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 				,LV_SortArrow:="LV_SortArrow",ToolTipText,EditValue,G,WM_NOTIFY:=0x4e
 	
 	; OnMessage WM_NOTIFY structure
-	static HDR:=new _Struct("HWND hwndFrom,UINT_PTR idFrom,UINT code,LPTSTR pszText,int cchTextMax,HANDLE hItem,LPARAM lParam") ;NMTVGETINFOTIP
+	static HDR:=Struct("HWND hwndFrom,UINT_PTR idFrom,UINT code,LPTSTR pszText,int cchTextMax,HANDLE hItem,LPARAM lParam") ;NMTVGETINFOTIP
 	static TVN_FIRST := 0xfffffe70,TVN_GETINFOTIP := TVN_FIRST - 14 - (A_IsUnicode?0:1),MenuExist:=0
-	local Font:="",GuiShow:="",GuiOptions:="",TREEHWND:="",EDITHWND:="",_EditKey:="",DefaultGui:="",FocusedControl:="",Height:="",Width:="",k:="",v:="",Item:="",NewKey:=""
-				,option:="",option1:="",option2:="",pos:="",thisHwnd:="",toRemove:="",object:="",TV_Child:="",TV_Item:="",TV_Text:="",TVC:="",TVP:="",LV_CurrRow:="",opt:=""
+	local Font:="",GuiShow:="",GuiOptions:="",TREEHWND:="",EDITHWND:="",_EditKey:="",DefaultGui:="",FocusedControl:="",Height:="",Width:="",k:="",v:="",Item:=""
+				,option:="",option1:="",option2:="",pos:="",thisHwnd:="",toRemove:="",object:="",TV_Child:="",TV_Item:="",TV_Text:="",TVC:="",TVP:="",opt:="",LV_CurrRow:="",NewKey:=""
 	If (ishwnd!=-1&&!IsObject(ishwnd)){
 		/*
 			ObjTree is also used to Monitor messages for TreeView: ObjeTree(obj=wParam,Title=lParam,Options=msg,ishwnd=hwnd)
 			when ishwnd is a handle, this routine is taken
 		*/
 		
-		; Using _Struct class we can assign new pointer to our structure
+		; Using Struct we can assign new pointer to our structure
 		; This way the structure is available a lot faster and less CPU is used
 		HDR[]:=Title
 		
@@ -43,16 +45,23 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 			object:=[TV_Text]
 			While TV_Item:=TV_GetParent(TV_Item){
 				TV_GetText(k,TV_Item)
-				object.Insert(k)
+				object.Push(k)
 			}
 
 			; Resolve our item/value in ToolTip object
-			While object.MaxIndex(){
-				ToolTipText:=ToolTipText[object.Remove()]
-			}
+      If IsObject(ToolTipText)
+  			While object.Length(){
+          k:=object.Pop()
+          If !ToolTipText.HasKey(k)
+            break
+          If !IsObject(ToolTipText:=ToolTipText[k])
+            break
+        }
 			; Item is not an object and is not empty, display value in ToolTip
-			If (ToolTipText!="")
+      
+			If (ToolTipText!=""&&!IsObject(ToolTipText))
 				Return HDR.pszText[""]:=&ToolTipText
+      else return &ToolTipText:=""
 		}
 		
 		; Gui has no ToolTip object or item could not be resolved
@@ -64,7 +73,7 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 			for key,v in object
 				If ((IsObject(key)?(Chr(177) " " (&key)):key)=TV_Text){
 					If !IsObject(v)
-						Return ToolTipText:=v,HDR.pszText[""]:=&ToolTipText
+						Return HDR.pszText[""]:=&ToolTipText,ToolTipText:=v
 					else If IsFunc(object)
 						ToolTipText:="[Func]`t`t" object.Name "`nBuildIn:`t`t" object.IsBuiltIn "`nVariadic:`t" object.IsVariadic "`nMinParams:`t" object.MinParams "`nMaxParams:`t" object.MaxParams
 					else
@@ -130,13 +139,13 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 	If (Options="")
 		Options:="+AlwaysOnTop +Resize,GuiShow=w640 h480"
 	If RegExMatch(Options,"i)^\s*([-\+]?ReadOnly)(\d+)?\s*$",option)
-		Options:="+AlwaysOnTop +Resize,GuiShow=w640 h480",ReadOnly[G]:=option1,ReadOnlyLevel[G]:=option2
+		Options:="+AlwaysOnTop +Resize,GuiShow=w640 h480",ReadOnly[G]:=option.1,ReadOnlyLevel[G]:=option.2
 	else ReadOnly[G]:="+ReadOnly"
-	Loop, Parse, Options, `,, %A_Space%
+	LoopParse, %Options%, `,, %A_Space%
 	{
 	 opt := Trim(SubStr(A_LoopField,1,InStr(A_LoopField,"=")-1))
 	 If RegExMatch(A_LoopField,"i)([-\+]?ReadOnly)(\d+)?",option)
-		ReadOnly[G]:=option1,ReadOnlyLevel[G]:=option2
+		ReadOnly[G]:=option.1,ReadOnlyLevel[G]:=option.2
 	 If (InStr("Font,GuiShow,NoWait",opt))
 		%opt% := SubStr(A_LoopField,InStr(A_LoopField,"=") + 1,StrLen(A_LoopField))  
 	 else GuiOptions:=RegExReplace(A_LoopField,"i)[-\+]?ReadOnly\s?")
@@ -161,9 +170,9 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 	; Apply Gui options and create Gui
 	Gui,%GuiOptions% +LastFound +LabelObjTree__
 	Gui,Add,Button, x0 y0 NoTab Hidden Default gObjTree_ButtonOK,Show/Expand Object
-	Gui,Add,TreeView,% "xs w" (size1*0.3) " h" size2 " ys AltSubmit gObjTree_TreeView +0x800 hwndTREEHWND " ReadOnly[G] " vObjTreeTreeView" G
-	Gui,Add,ListView,% "x+1 w" (size1*0.7) " h" (size2*0.5) " ys AltSubmit Checked " ReadOnly[G] " gObjTree_ListView hwndLISTHWND" G " vObjTreeListView" G,[IsObj] Key/Address|Value/Address
-	Gui,Add,Edit,% "y+1 w" (size1*0.7) " h" (size2*0.5) " -wrap +HScroll gObjTree_Edit HWNDEDITHWND " ReadOnly[G]
+	Gui,Add,TreeView,% "xs w" (size.1*0.3) " h" (size.2) " ys AltSubmit gObjTree_TreeView +0x800 hwndTREEHWND " ReadOnly[G] " vObjTreeTreeView" G
+	Gui,Add,ListView,% "x+1 w" (size.1*0.7) " h" (size.2*0.5) " ys AltSubmit Checked " ReadOnly[G] " gObjTree_ListView hwndLISTHWND" G " vObjTreeListView" G,[IsObj] Key/Address|Value/Address
+	Gui,Add,Edit,% "y+1 w" (size.1*0.7) " h" (size.2*0.5) " -wrap +HScroll gObjTree_Edit HWNDEDITHWND " ReadOnly[G]
 	GuiControl,Disable,Edit1
 	TREEOBJ["_" (TREEHWND+0)] := G
 	Attach(TREEHWND,"w1/2 h")
@@ -172,7 +181,6 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 	
 	; parents will hold TV_Item <> Object relation
 	parents[G]:={}
-	
 	; Convert object to TreeView
 	; Also create a clone for our object
 	; Changes can be optionally saved when ObjTree is closed when -ReadOnly is used
@@ -203,7 +211,7 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 	}
 	
 	; Register to Launch this function OnMessage
-	OnMessage(WM_NOTIFY,"ObjTree")
+	OnMessage(WM_NOTIFY,thisHwnd,"ObjTree")
 	
 	; Show our Gui
 	Gui,Show,%GuiShow%,%Title%
@@ -217,7 +225,7 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 	
 	; Backup current Gui number and display Menu
 	ObjTree__ContextMenu:
-		G:=A_Gui
+		G:=A_Gui+0
 		If (ReadOnly[G]!="-ReadOnly")
 			Menu,ObjTreeReadOnly,Show
 		else Menu,ObjTree,Show
@@ -226,7 +234,7 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 	; Insert new Item, launched by Menu
 	ObjTree_Insert:
 		If A_Gui
-			G:=A_Gui
+			G:=A_Gui+0
 		If (ReadOnly[G]!="-ReadOnly")
 			return
 		Changed[G]:=1
@@ -239,8 +247,8 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 				Return
 		EditItem[G]:=TV_GetParent(TV_Child:=TV_GetSelection())
 		,EditObject[G]:=!EditItem[G]?newObj[G]:parents[G,EditItem[G]]
-		,EditObject[G].Insert("")
-		,Parents[G,EditItem[G]:=TV_Add(EditObject[G].MaxIndex(),EditItem[G],"Sort")]:=EditObject[G]
+		,EditObject[G].Push("")
+		,Parents[G,EditItem[G]:=TV_Add(EditObject[G].Length(),EditItem[G],"Sort")]:=EditObject[G]
 		,TV_Modify(EditItem[G],"Select")
 		,TV_GetText(TV_Text,TV_Item)
 	return
@@ -248,7 +256,7 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 	; Insert new Child item, launched by Menu
 	ObjTree_InsertChild:
 		If A_Gui
-			G:=A_Gui
+			G:=A_Gui+0
 		If (ReadOnly[G]!="-ReadOnly")
 			return
 		Changed[G]:=1
@@ -263,9 +271,9 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 		EditObject[G]:=!EditItem[G]?newObj[G]:parents[G,EditItem[G]]
 		TV_GetText(_EditKey,TV_Child)
 		If IsObject(EditObject[G,EditKey[G]:=_EditKey]){
-			_EditKey:=EditObject[G,EditKey[G]].MaxIndex()+1
-			EditObject[G,EditKey[G]].Insert(NewKey:=_EditKey?_EditKey:1,"") ;,ObjTree_Add(EditObject[G,EditKey[G]],TV_Child,parents[G])
-			,Parents[G,EditItem[G]:=TV_Add(EditObject[G,EditKey[G]].MaxIndex(),TV_Child,"Sort")]:=EditObject[G,EditKey[G]]
+			_EditKey:=EditObject[G,EditKey[G]].Length()+1
+			EditObject[G,EditKey[G],NewKey:=_EditKey?_EditKey:1]:="" ;,ObjTree_Add(EditObject[G,EditKey[G]],TV_Child,parents[G])
+			,Parents[G,EditItem[G]:=TV_Add(EditObject[G,EditKey[G]].Length(),TV_Child,"Sort")]:=EditObject[G,EditKey[G]]
 			,ObjTree_LoadList(EditObject[G,EditKey[G]],"",G)
 		} else 
 			EditObject[G,EditKey[G]]:=NewKey:={1:""},parents[G,TV_Child]:=NewKey,parents[G,NewKey]:=TV_Child
@@ -277,7 +285,7 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 	; Delete Item, launched by Menu
 	ObjTree_Delete:
 		If A_Gui
-			G:=A_Gui
+			G:=A_Gui+0
 		If (ReadOnly[G]!="-ReadOnly")
 			return
 		Changed[G]:=1
@@ -290,34 +298,35 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 				Return
 		EditObject[G]:=!TV_GetParent(TV_GetSelection())?newObj[G]:parents[G,TV_GetParent(TV_GetSelection())]
 		TV_GetText(_EditKey,TV_Item:=TV_GetSelection())
-		ObjRemove(EditObject[G],EditKey[G]:=_EditKey)
+		ObjDelete(EditObject[G],EditKey[G]:=_EditKey)
 		for key in EditObject[G]
 		{
 			EditKey[G]:=key
 			break
 		}
-		ObjTree_TVReload(EditObject[G],TV_Item,EditKey[G],parents,G)
+		ObjTree_TVReload(EditObject[G],TV_Item,EditKey[G],parents,G,hwnd)
 		Return
 	return
 	
 	; Close ObjTree Window
 	ObjTree__Close:
 		If A_Gui
-			G:=A_Gui
+			G:=A_Gui+0
 		Gui,%G%:+OwnDialogs
+		OnMessage(WM_NOTIFY,hWnd[G],"ObjTree","")
 		If (ReadOnly[G]="-ReadOnly" && Changed[G]){
-			MsgBox,3,Save Changes,Would you like to save changes?
-			IfMsgBox Cancel
-				Return
-			IfMsgBox Yes
+			MsgBox,262147,% "Save Changes",% "Would you like to save changes?"
+			If (A_MsgBoxResult = "Cancel")
+				return
+			If (A_MsgBoxResult = "Yes")
 			{
 				toRemove:={}
-				for key in Objects[G]
-					toRemove[k]:=key
-				for key in toRemove
-					Objects[G].Remove(key)
-				for key,v in newObj[G]
-					Objects[G,key]:=v
+				for k in Objects[G]
+					toRemove[k]:=k
+				for k in toRemove
+					Objects[G].Delete(k)
+				for k,v in newObj[G]
+					Objects[G,k]:=v
 			}
 		}
 		Gui,%G%:Destroy
@@ -327,7 +336,7 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 	; Edit control event, update value in ListView and clone of our object
 	ObjTree_Edit:
 		If A_Gui
-			G:=A_Gui
+			G:=A_Gui+0
 		Gui,%G%:Default
 		Gui,TreeView, ObjTreeTreeView%G%
 		Gui,ListView, ObjTreeListView%G%
@@ -356,10 +365,10 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 	; TreeView events handling
 	ObjTree_TreeView:
 		If A_Gui
-			G:=A_Gui
+			G:=A_Gui+0
 		Gui,%G%:Default
 		Gui,TreeView, ObjTreeTreeView%G%
-		If (ReadOnly[G]="-ReadOnly"){
+		If (IsObject(ReadOnly) && ReadOnly[G]="-ReadOnly"){
 			If (A_GuiEvent=="E"||(A_GuiEvent="k"&&A_EventInfo=113)){
 				If (A_GuiEvent="k")
 					EditItem[G]:=TV_GetSelection()
@@ -372,25 +381,25 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 				TV_Item:=TV_GetSelection()
 				Loop % ReadOnlyLevel[G]
 					If !(TV_Item:=TV_GetParent(TV_Item))
-						Return, TV_Modify(EditItem[G],"Sort",EditKey[G])
+						Return TV_Modify(EditItem[G],"Sort",EditKey[G]),""
 				TV_GetText(NewKey,EditItem[G])
 				If (NewKey=EditKey[G])
 					Return
 				else if EditObject[G].HasKey(NewKey){
 					Gui,%G%: +OwnDialogs
 					MsgBox,4,Existing Item,The new item already exist.`nDo you want to replace it with this item?
-					IfMsgBox No 
+					If (A_MsgBoxResult="No")
 						Return TV_Modify(EditItem[G],"",EditKey[G])
 					Changed[G]:=1
-					EditObject[G,NewKey]:=EditObject[G,EditKey[G]],ObjRemove(EditObject[G],EditKey[G])
-					return ObjTree_TVReload(EditObject[G],EditItem[G],NewKey,parents,G)
+					EditObject[G,NewKey]:=EditObject[G,EditKey[G]],ObjDelete(EditObject[G],EditKey[G])
+					return ObjTree_TVReload(EditObject[G],EditItem[G],NewKey,parents,G,hwnd)
 				} else {
 					Changed[G]:=1
-					EditObject[G,NewKey]:=EditObject[G,EditKey[G]],ObjRemove(EditObject[G],EditKey[G])
-					return ObjTree_TVReload(EditObject[G],EditItem[G],NewKey,parents,G)
+					EditObject[G,NewKey]:=EditObject[G,EditKey[G]],ObjDelete(EditObject[G],EditKey[G])
+					return ObjTree_TVReload(EditObject[G],EditItem[G],NewKey,parents,G,hwnd)
 				}
 			} else	If (A_GuiEvent="k"){ ;Key Press
-				If A_EventInfo not in 45,46
+				If (A_EventInfo!=45 && A_EventInfo!=46)
 					Return
 				TV_Item:=TV_GetSelection()
 				Loop % ReadOnlyLevel[G]
@@ -401,40 +410,40 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 					EditItem[G]:=TV_GetParent(TV_Child:=TV_GetSelection())
 					EditObject[G]:=!EditItem[G]?newObj[G]:parents[G,EditItem[G]]
 					If (GetKeyState("Shift","P")&&!ReadOnlyLevel[G])
-						EditObject[G].Insert(EditKey[G]:={1:""})
-						,parents[G,EditItem[G]:=TV_Add(EditObject[G].MaxIndex(),EditItem[G],"Sort")]:=EditKey[G],parents[G,EditKey[G]]:=EditItem[G]
+						EditObject[G].Push(EditKey[G]:={1:""})
+						,parents[G,EditItem[G]:=TV_Add(EditObject[G].Length(),EditItem[G],"Sort")]:=EditKey[G],parents[G,EditKey[G]]:=EditItem[G]
 						,ObjTree_Add(EditKey[G],EditItem[G],parents,G)
 					else if (GetKeyState("CTRL","P")&&!ReadOnlyLevel[G]){
 						TV_GetText(_EditKey,TV_Child)
 						If IsObject(EditObject[G,EditKey[G]:=_EditKey]){
-							_EditKey:=EditObject[G,EditKey[G]].MaxIndex()+1
-							EditObject[G,EditKey[G]].Insert(_EditKey?_EditKey:1,"")
-							,Parents[G,EditItem[G]:=TV_Add(EditObject[G,EditKey[G]].MaxIndex(),TV_Child,"Sort")]:=EditObject[G,EditKey[G]]
+							_EditKey:=EditObject[G,EditKey[G]].Length()+1
+							EditObject[G,EditKey[G],_EditKey?_EditKey:1]:=""
+							,Parents[G,EditItem[G]:=TV_Add(EditObject[G,EditKey[G]].Length(),TV_Child,"Sort")]:=EditObject[G,EditKey[G]]
 							,ObjTree_LoadList(EditObject[G,EditKey[G]],"",G)
 						} else 
 							EditObject[G,EditKey[G]]:=NewKey:={1:""},parents[G,TV_Child]:=NewKey,parents[G,NewKey]:=TV_Child
 							,ObjTree_Add(NewKey,TV_Child,parents,G),TV_Modify(TV_Child,"Expand")
 					} else 
-						EditObject[G].Insert("")
-						,parents[G,EditItem[G]:=TV_Add(EditObject[G].MaxIndex(),EditItem[G],"Sort")]:=EditObject[G]
+						EditObject[G].Push("")
+						,parents[G,EditItem[G]:=TV_Add(EditObject[G].Length(),EditItem[G],"Sort")]:=EditObject[G]
 				} else if (A_EventInfo=46) { ;Delete
 					Changed[G]:=1
 					EditObject[G]:=!TV_GetParent(TV_GetSelection())?newObj[G]:parents[G,TV_GetParent(TV_GetSelection())]
 					TV_GetText(_EditKey,TV_Item:=TV_GetSelection())
-					ObjRemove(EditObject[G],EditKey[G]:=_EditKey)
+					ObjDelete(EditObject[G],EditKey[G]:=_EditKey)
 					for key in EditObject[G]
 					{
 						EditKey[G]:=key
 						break
 					}
-					return ObjTree_TVReload(EditObject[G],TV_Item,EditKey[G],parents,G)
+					return ObjTree_TVReload(EditObject[G],TV_Item,EditKey[G],parents,G,hwnd)
 				}
 				EditKey[G]:="",EditObject[G]:="",EditItem[G]:=""
 				GuiControl, +Redraw, ObjTreeTreeView
 				DllCall("InvalidateRect", "ptr", hwnd[G], "ptr", 0, "int", true)
 				Return
 			}
-		} else if A_GuiEvent in k,E,e
+		} else if InStr(",k,e,","," A_GuiEvent ",")
 			Return
 		if (A_EventInfo=0)
 			Return
@@ -453,7 +462,7 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 	; ListView events handling
 	ObjTree_ListView:
 		If A_Gui
-			G:=A_Gui
+			G:=A_Gui+0
 		Gui,%G%:Default
 		Gui,TreeView, ObjTreeTreeView%G%
 		Gui,ListView, ObjTreeListView%G%
@@ -474,24 +483,24 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 				else if EditObject[G].HasKey(NewKey) {
 					Gui,%G%: +OwnDialogs
 					MsgBox,4,Existing Item,The new item already exist.`nDo you want to replace it with this item?
-					IfMsgBox No
+					If (A_MsgBoxResult="No")
 					{
 						LV_Modify(A_EventInfo,"",EditKey[G])
 						Return
 					}
 					Changed[G]:=1
-					EditObject[G,NewKey]:=EditObject[G,EditKey[G]],ObjRemove(EditObject[G],EditKey[G])
-					return ObjTree_TVReload(EditObject[G],EditItem[G],NewKey,parents,G)
+					EditObject[G,NewKey]:=EditObject[G,EditKey[G]],ObjDelete(EditObject[G],EditKey[G])
+					return ObjTree_TVReload(EditObject[G],EditItem[G],NewKey,parents,G,hwnd)
 				} else {
 					Changed[G]:=1
-					EditObject[G,NewKey]:=EditObject[G,EditKey[G]],ObjRemove(EditObject[G],EditKey[G])
-					ObjTree_TVReload(EditObject[G],EditItem[G],NewKey,parents,G)
+					EditObject[G,NewKey]:=EditObject[G,EditKey[G]],ObjDelete(EditObject[G],EditKey[G])
+					ObjTree_TVReload(EditObject[G],EditItem[G],NewKey,parents,G,hwnd)
 					return
 				}
 			}
 		}
 		If (A_GuiEvent = "ColClick"){
-			Return ,IsFunc(LV_SortArrow)?LV_SortArrow.(LISTHWND%G%, A_EventInfo):""
+			Return IsFunc(LV_SortArrow)?%LV_SortArrow%(LISTHWND%G%, A_EventInfo):"",""
 		} else if (A_GuiEvent="k" && A_EventInfo=8){
 			If TV_GetParent(TV_GetSelection())
 				TV_Modify(TV_GetParent(TV_GetSelection()))
@@ -535,7 +544,7 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 	; Used when Enter is pressed but also used by TreeView and ListView
 	ObjTree_ButtonOK:
 		If A_Gui
-			G:=A_Gui
+			G:=A_Gui+0
 		Gui,%G%:Default
 		Gui,TreeView, ObjTreeTreeView%G%
 		Gui,ListView, ObjTreeListView%G%
@@ -564,7 +573,7 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 		While (TV_GetText(TV_Item,TV_Child) && TV_Item!=LV_Item)
 			TV_Child:=TV_GetNext(TV_Child)
 		If (A_GuiEvent="I" && ErrorLevel="C")
-			LV_Modify(Item,(parents[G,parents[G,TV_Child]]=TV_Child?"":"-")"Check")
+			LV_Modify(Item,(parents[G,parents[G,TV_Child]]=TV_Child?"":"-") "Check")
 		else if (TV_Child)
 			TV_Modify(TV_Child,"Select Expand")
 	Return
@@ -595,7 +604,7 @@ ObjTree(ByRef obj,Title="ObjTree",Options="+ReadOnly +Resize,GuiShow=w640 h480",
 		ObjTree_Expand(TV_GetSelection(),1,1)
 	Return
 }
-ObjTree_Expand(TV_Item,OnlyOneItem=0,Collapse=0){
+ObjTree_Expand(TV_Item,OnlyOneItem:=0,Collapse:=0){
 	Loop {
 		If !TV_GetChild(TV_Item)
 			TV_Modify(TV_GetParent(TV_Item),(Collapse?"-":"") "Expand")
@@ -610,20 +619,20 @@ ObjTree_Add(obj,parent,ByRef p,G){
 	{
 		If (IsObject(v) && !p[G].Haskey(v))
 			p[G,v]:=TV_Add(IsObject(k)?Chr(177) " " (&k):k,parent,"Sort"),p[G,p[G,v]]:=v
-			,ObjTree_Add(v,p[G,v],p,G)
+      ,ObjTree_Add(v,p[G,v],p,G)
 		else
 			p[G,lastParent:=TV_Add(IsObject(k)?Chr(177) " " (&k):k,parent,"Sort")]:=IsObject(v)?v:obj
 		If (IsObject(k) && !p[G].HasKey(v))
 			p[G,k]:=TV_Add(Chr(177) " " (&k),IsObject(v)?p[G,v]:lastParent,"Sort"),p[G,p[G,k]]:=k
-			,ObjTree_Add(k,p[G,k],p,G)
+      ,ObjTree_Add(k,p[G,k],p,G)
 	}
 }
-ObjTree_Clone(obj,e=0){
+ObjTree_Clone(obj,e:=0){
 	k:="",v:=""
 	If !e
-		e:={(obj):clone:=obj._Clone()}
+		e:={(obj):clone:=obj.Clone()}
 	else If !e.HasKey(obj)
-		e[obj]:=clone:=obj._Clone()
+		e[obj]:=clone:=obj.Clone()
 	for k,v in obj
 	{
 		If IsObject(v){
@@ -636,13 +645,13 @@ ObjTree_Clone(obj,e=0){
 			} else clone[n]:=e[v]
 		} else If IsObject(k) {
 			If !e.HasKey(k){
-				clone[n:=ObjTree_Clone(k,e)]:=e[k]:=clone[n],ObjRemove(clone,k)
-			} else clone[e[k]]:=v,ObjRemove(clone,k)
+				clone[n:=ObjTree_Clone(k,e)]:=e[k]:=clone[n],ObjDelete(clone,k)
+			} else clone[e[k]]:=v,ObjDelete(clone,k)
 		}
 	}
 	Return clone
 }
-ObjTree_TVReload(ByRef obj,TV_Item,Key,ByRef parents,G){ ; Version 1.0.1.0 http://www.autohotkey.com/forum/viewtopic.php?t=69756
+ObjTree_TVReload(ByRef obj,TV_Item,Key,ByRef parents,G,hwnd){ ; Version 1.0.1.0 http://www.autohotkey.com/forum/viewtopic.php?t=69756
 	Gui,%G%:Default
 	Gui,TreeView, ObjTreeTreeView%G%
 	If !(TV_Child:=TV_GetParent(TV_Item))
@@ -671,7 +680,7 @@ ObjTree_LoadList(obj,text,G){
 	GuiControl,Disable,Edit1
 	for k,v in obj
 	{
-		LV_Add(((IsObject(v)||IsObject(k))?"Check":"") (select&&text=(IsObject(k)?(Chr(177) " " (&k)):k)?(" Select",LV_CurrRow:=A_Index):"")
+		LV_Add(((IsObject(v)||IsObject(k))?"Check":"") (select&&text=(IsObject(k)?(Chr(177) " " (&k)):k)?(LV_CurrRow:=A_Index," Select"):"")
 					,IsObject(k)?(Chr(177) " " (&k)):k,IsFunc(v)?"[" (v.IsBuiltIn?"BuildIn ":"") (v.IsVariadic?"Variadic ":"") "Func] " v.Name:IsObject(v)?(Chr(177) " " (&v)):v)
 		If (LV_CurrRow=A_Index){
 			LV_Modify(LV_CurrRow,"Vis Select") ;make sure selcted row it is visible
