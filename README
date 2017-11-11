@@ -24,6 +24,7 @@ Syntax:
    - ToolTipObject = ToolTipInfoObject containing the same structure as Object to show different information when a tree view Item is hovered
    
 Example:
+```ahk
 ObjTree:=ObjTree({MyObject:{"Key With Object":["a","This is a test","b",2]}
 					,"Another Object":{Key:["c",1,"d",2]}
 					,"Empty Object":[]
@@ -36,3 +37,4 @@ ObjTree:=ObjTree({MyObject:{"Key With Object":["a","This is a test","b",2]}
 WinWaitClose "ahk_id " ObjTree.hwnd
 ObjTree:=""
 ExitApp
+```
