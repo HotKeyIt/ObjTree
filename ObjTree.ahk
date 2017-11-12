@@ -73,8 +73,6 @@ Class _ObjTree {
 			when ishwnd is a handle, this routine is taken
 		*/
 		
-		; Using _Struct class we can assign new pointer to our structure
-		; This way the structure is available a lot faster and less CPU is used
 		; Check if this message is relevant
 		If (NumGet(lParam,A_PtrSize*2,"Uint")!=TVN_GETINFOTIP)
 			Return
@@ -106,7 +104,7 @@ Class _ObjTree {
 		object:=this.items[TV_Item,TV_Text]
 		if !IsObject(object)
 			ToolTipText:=object ""
-		else If IsFunc(object)
+		else If IsObject(object) && IsFunc(object)
 			ToolTipText:="[Func]`t`t" object.Name "`nBuildIn:`t`t" object.IsBuiltIn "`nVariadic:`t" object.IsVariadic "`nMinParams:`t" object.MinParams "`nMaxParams:`t" object.MaxParams
 		else
 			for key,v in object
@@ -247,7 +245,7 @@ Class _ObjTree {
 				break
 			k:=TV.GetText(item),v:=obj[k]
 			LV.Add(((IsObject(v)||IsObject(k))?"Check":"") (text=(IsObject(k)?(Chr(177) " " (&k)):k)?(LV_CurrRow:=A_Index," Select"):"")
-						,IsObject(k)?(Chr(177) " " (&k)):k,IsFunc(v)?"[" (v.IsBuiltIn?"BuildIn ":"") (v.IsVariadic?"Variadic ":"") "Func] " v.Name:IsObject(v)?(Chr(177) " " (&v)):v,item)
+						,IsObject(k)?(Chr(177) " " (&k)):k,IsObject(v) && IsFunc(v)?"[" (v.IsBuiltIn?"BuildIn ":"") (v.IsVariadic?"Variadic ":"") "Func] " v.Name:IsObject(v)?(Chr(177) " " (&v)):v,item)
 			If (LV_CurrRow=A_Index)
 				LV.Modify(LV_CurrRow,"Vis Select"),	this.Edit.Enabled:=!IsObject(v)&&!ReadOnly,	this.Edit.Text:=v
 		}
