@@ -172,10 +172,10 @@ Class _ObjTree {
 		Loop this.ReadOnlyLevel
 			if !TV_Item:=TV.GetParent(TV_Item?TV_Item:TV.GetSelection())
 				Return MsgBox("New Items can be inserted only from level " this.ReadOnlyLevel "!")
-		if !parent:=TV.GetParent(TV.GetSelection())
+		if !parent:=TV.GetParent(obj:=TV.GetSelection())
 			item:=this.newObj.Push(obj:=[]),this.items[obj]:=TV.Add(item,,"Sort"),this.items[this.items[obj]]:=obj
 		else
-			this.Items[item:=this.TV.Add(k:=this.Items[parent].Push(""),parent,"Sort")]:=this.Items[parent]
+			this.Items[item:=this.TV.Add(k:=this.Items[obj].Push(""),parent,"Sort")]:=this.Items[obj]
 		this.changed:=1
 	}
 	TVInsertChild(TV){
@@ -183,12 +183,12 @@ Class _ObjTree {
 			if !TV_Item:=TV.GetParent(TV_Item?TV_Item:TV.GetSelection())
 				Return MsgBox("New Items can be inserted only from level " this.ReadOnlyLevel "!")
 		this.gui.Opt("+OwnDialogs")
-		if !IsObject(this.items[parent:=TV.GetSelection()]){
-			if "Yes"=MsgBox(TV.GetText(parent) " is not an object, would you like to convert it to object?",,4)
-				v:=this.Items[parent,k:=TV.GetText(parent)],this.Items[parent,k]:=obj:={(k):v},this.Items[obj]:=TV.Add(k,parent,"Sort")
+		if !IsObject(v:=this.items[parent:=TV.GetSelection(),k:=TV.GetText(parent)]){
+			if "Yes"=MsgBox(k " is not an object, would you like to convert it to object?",,4)
+				this.Items[parent,k]:=obj:={(k):v},this.Items[obj]:=TV.Add(k,parent,"Sort")
 			else Return
 		} else
-			this.Items[item:=TV.Add(k:=this.Items[parent].Push(""),parent,"Sort")]:=this.Items[parent]
+			this.Items[item:=TV.Add(this.Items[parent,k].Push(""),parent,"Sort")]:=this.Items[parent,k]
 		this.changed:=1
 	}
 	TVDelete(TV){
