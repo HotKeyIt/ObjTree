@@ -53,7 +53,8 @@ Class _ObjTree {
 			,ObjTree_Attach(LV.hwnd,"w1/2 h1/2 x1/2 y0")
 			,ObjTree_Attach(Edit.hwnd,"w1/2 h1/2 x1/2 y1/2")
 		}
-		this.Tooltip:=ToolTip,	fun:=this.TVContextMenu.Bind(this),		this.TV.OnEvent("ContextMenu",fun),		this.gui.Show(GuiShow),	fun:=this.Notify.Bind(this,TV),	OnMessage(78,fun) ;WM_NOTIFY
+		this.Tooltip:=ToolTip,	fun:=this.TVContextMenu.Bind(this),		this.TV.OnEvent("ContextMenu",fun),		this.gui.Show(GuiShow)
+		,this.WM_Notify:=this.Notify.Bind(this,TV),	OnMessage(78,this.WM_Notify) ;WM_NOTIFY
 	}
 	IsAHK_H() {   ; Written by SKAN, modified by HotKeyIt
 		; www.autohotkey.com/forum/viewtopic.php?p=233188#233188  CD:24-Nov-2008 / LM:27-Oct-2010
@@ -128,6 +129,7 @@ Class _ObjTree {
 		}
 		this.newObj:=""
 		this.gui.destroy()
+		OnMessage(78,this.WM_Notify,0)
 	}
 	TVContextMenu(TV,Item, IsRightClick){
 		TV.Modify(Item)
