@@ -1,8 +1,8 @@
-﻿ObjTree(ByRef obj,Title:="ObjTree",Options:="+ReadOnly +Resize,Edit=-Wrap,GuiShow=w640 h480",ToolTip:=""){
+﻿ObjTree(ByRef obj,Title:="ObjTree",Options:="+ReadOnly +Resize,GuiShow=w640 h480",ToolTip:=""){
 	return new _ObjTree(obj,Title,Options,ToolTip)
 }
 Class _ObjTree {
-	__New(ByRef obj, Title:="ObjTree",Options:="+ReadOnly +Resize,Edit=-Wrap,GuiShow=w640 h480",ToolTip:=""){
+	__New(ByRef obj, Title:="ObjTree",Options:="+ReadOnly +Resize,edit=-wrap,GuiShow=w640 h480",ToolTip:=""){
 		If RegExMatch(Options,"i)^\s*([-\+]?ReadOnly)(\d+)?\s*$",option)
 			Options:="+AlwaysOnTop +Resize,GuiShow=w640 h480",this.ReadOnly:=option.1,this.ReadOnlyLevel:=option.2
 		else this.ReadOnly:="+ReadOnly"
@@ -33,9 +33,9 @@ Class _ObjTree {
 		,fun:=this.LVDoubleClick.Bind(this,TV),	LV.OnEvent("DoubleClick",fun)
 		,fun:=this.LVEdit.Bind(this,TV),	LV.OnEvent("ItemEdit",fun)
 		,fun:=this.LVCheck.Bind(this,TV),	LV.OnEvent("ItemCheck",fun)
-		,EditKey:=this.EditKey:=this.Gui.AddEdit("y+1 w" (size.1*0.7) " h" (size.2*0.11) (IsAHK_H?" axr aw2/3 ah1/5 ax1/3 ay1/2 +HScroll":"") " " this.ReadOnly)
+		,EditKey:=this.EditKey:=this.Gui.AddEdit("y+1 w" (size.1*0.7) " h" (size.2*0.11) (IsAHK_H?" axr aw2/3 ah1/5 ax1/3 ay1/2 +HScroll":"") " " this.ReadOnly " " Edit)
 		,EditKey.Enabled:=false,	fun:=this.EditKeyEdit.Bind(this,TV,LV),EditKey.OnEvent("Change",fun)
-		,EditValue:=this.EditValue:=this.Gui.AddEdit("y+1 w" (size.1*0.7) " h" (size.2*0.39) (IsAHK_H?" axr aw2/3 ah3/10 ax1/3 ay1/5 +HScroll":"") " " this.ReadOnly)
+		,EditValue:=this.EditValue:=this.Gui.AddEdit("y+1 w" (size.1*0.7) " h" (size.2*0.39) (IsAHK_H?" axr aw2/3 ah3/10 ax1/3 ay1/5 +HScroll":"") " " this.ReadOnly " " Edit)
 		,EditValue.Enabled:=false,	fun:=this.EditValueEdit.Bind(this,TV,LV),EditValue.OnEvent("Change",fun)
 		; Items will hold TV_Item <> Object relation
 		,this.Items:={},	this.obj:=obj
@@ -168,6 +168,9 @@ Class _ObjTree {
 				,this.TVAdd(v,this.Items[v])
 			else
 				this.Items[lastParent:=this.TV.Add(IsObject(k)?Chr(177) " " (&k):k,parent,"Sort")]:=obj
+			;~ If (IsObject(k) && !this.Items.HasKey(v))
+				;~ this.Items[k]:=this.TV.Add(Chr(177) " " (&k),IsObject(v)?this.Items[v]:lastParent,"Sort"),this.Items[this.Items[k]]:=k
+				;~ this.TVAdd(k,this.Items[k])
 		}
 	}
 	TVExpandAll(Menu){
