@@ -151,7 +151,7 @@ Class _ObjTree {
 		if newkey=key
 			return
 		If Obj.HasKey(newKey)
-			Return (this.gui.Opt("+OwnDialogs"),this.EditValue.Text:=key,MsgBox("Key " newKey " already exists"))
+			Return (this.gui.Opt("+OwnDialogs"),this.EditKey.Text:=key,MsgBox("Key " newKey " already exists"))
 		obj[newkey]:=obj[key],	obj.Delete(key),	TV.Modify(id,,newkey),	LV.Modify(row,,newkey)
 		,TV.Modify(this.items[this.items[id]],"Sort"),	LV.ModifyCol(1,"Sort AutoHdr"),	this.changed:=1
 	}
