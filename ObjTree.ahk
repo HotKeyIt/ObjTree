@@ -25,7 +25,7 @@ Class _ObjTree {
 		this.Gui:=GuiCreate(GuiOptions,Title),	this.hwnd:=this.gui.hwnd
 		,fun:=this.Close.Bind(this),	this.Gui.OnEvent("Close",fun) ;,	this.Gui.OnEvent("Escape",fun)
 		if (this.Font)
-			Gui.SetFont(SubStr(this.Font,1,Pos := InStr(this.Font,":") - 1),SubStr(this.Font,Pos + 2,StrLen(this.Font)))
+			this.gui.SetFont(SubStr(this.Font,1,Pos := InStr(this.Font,":") - 1),SubStr(this.Font,Pos + 2,StrLen(this.Font)))
 		; Get Gui size
 		if !RegExMatch(this.GuiShow,"\b[w]([0-9]+\b).*\b[h]([0-9]+\b)",size)
 			size:=[640,480],this.GuiShow.=" w640 h480"

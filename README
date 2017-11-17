@@ -15,9 +15,10 @@ Syntax:
   - hwnd = ahk_id of created window
    - Object = object to show in Gui
    - Title = Title for Gui
-   - Options separated by comma (default:"+ReadOnly +Resize,GuiShow=w640 h480").
+   - Options separated by comma (default:"+ReadOnly +Resize,GuiShow=w640 h480")
    - - +/-ReadOnly[level]
    - - - For -ReadOnly[level], only keys and values deeper than level will be editable.
+   - - KeyNoEdit=1 will disable editing keys
    - - Gui options
    - - Font options, different to Gui options this requires Font=
    - - Gui Show options, also GuiShow= is required
@@ -28,7 +29,7 @@ ObjTree:=ObjTree({MyObject:{"Key With Object":["a","This is a test","b",2]}
 					,"Another Object":{Key:["c",1,"d",2]}
 					,"Empty Object":[]
 					,"Another Object 2":["e",1,"f",2]}
-		,"My ObjTree Gui Title","-ReadOnly"
+		,"My ObjTree Gui Title","+ReadOnly +Resize,Edit=+Wrap,KeyNoEdit=1,Font=s10:Courier new,GuiShow=w640 h480"
 		,{MyObject:{"Key With Object":"This is a an object`nKey is a string and value is object"}
 					,"Another Object":{Key:"This is an object"}
 					,"Empty Object":"This object is empty"
