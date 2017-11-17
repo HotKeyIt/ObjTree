@@ -2,6 +2,13 @@
 	return new _ObjTree(obj,Title,Options,ToolTip)
 }
 Class _ObjTree {
+	; Options can be a string of following options, separated by komma (,). Any option can be omitted:
+	;	Text before first komma except for ReadOnly must contain Gui Options, see https://autohotkey.com/docs/commands/Gui.htm#Options
+	;	After first komma you have following options:
+	;		[Font=options:FontName], see https://autohotkey.com/docs/commands/Gui.htm#Font
+	;		[Edit=options], see https://autohotkey.com/docs/commands/Gui.htm#OtherOptions
+	;		[KeyNoEdit=1] will not allow to edit any key, also key for new Items cannot be edited
+	;		[GuiShow=options], see https://autohotkey.com/docs/commands/Gui.htm#Show
 	__New(ByRef obj, Title:="ObjTree",Options:="+ReadOnly +Resize,edit=-wrap,GuiShow=w640 h480",ToolTip:=""){
 		If RegExMatch(Options,"i)^\s*([-\+]?ReadOnly)(\d+)?\s*$",option)
 			Options:="+AlwaysOnTop +Resize,GuiShow=w640 h480",this.ReadOnly:=option.1,this.ReadOnlyLevel:=option.2
@@ -11,29 +18,29 @@ Class _ObjTree {
 		 opt := Trim(SubStr(A_LoopField,1,InStr(A_LoopField,"=")-1))
 		 If RegExMatch(A_LoopField,"i)([-\+]?ReadOnly)(\d+)?",option)
 			this.ReadOnly:=option.1,this.ReadOnlyLevel:=option.2
-		 If (InStr("Font,GuiShow,Edit",opt))
-			%opt% := SubStr(A_LoopField,InStr(A_LoopField,"=") + 1,StrLen(A_LoopField))  
-		 else GuiOptions:=RegExReplace(A_LoopField,"i)[-\+]?ReadOnly\s?")
+		 If (InStr("Font,GuiShow,Edit,KeyNoEdit",opt))
+			this[opt] := SubStr(A_LoopField,InStr(A_LoopField,"=") + 1,StrLen(A_LoopField))  
+		 else GuiOptions:=RegExReplace(A_LoopField,"i)[-\+]?ReadOnly\d*\s?")
 		}
 		this.Gui:=GuiCreate(GuiOptions,Title),	this.hwnd:=this.gui.hwnd
 		,fun:=this.Close.Bind(this),	this.Gui.OnEvent("Close",fun) ;,	this.Gui.OnEvent("Escape",fun)
-		if (Font)
-			Gui.SetFont(SubStr(Font,1,Pos := InStr(Font,":") - 1),SubStr(Font,Pos + 2,StrLen(Font)))
+		if (this.Font)
+			Gui.SetFont(SubStr(this.Font,1,Pos := InStr(this.Font,":") - 1),SubStr(this.Font,Pos + 2,StrLen(this.Font)))
 		; Get Gui size
-		if !RegExMatch(GuiShow,"\b[w]([0-9]+\b).*\b[h]([0-9]+\b)",size)
-			size:=[640,480]
+		if !RegExMatch(this.GuiShow,"\b[w]([0-9]+\b).*\b[h]([0-9]+\b)",size)
+			size:=[640,480],this.GuiShow.=" w640 h480"
 		; Get hwnd of new window
 		this.Hwnd:=this.gui.hwnd,IsAHK_H:=this.IsAHK_H()
 		; Apply Gui options and create Gui
 		,this.Gui.AddButton("x0 y0 NoTab Hidden Default","Show/Expand Object")
 		,TV:=this.TV:=this.Gui.AddTreeView("xs w" (size.1*0.3) " h" (size.2) " ys " (IsAHK_H?"aw1/3 ah":"") " +0x800 +ReadOnly")
-		,LV:=this.LV:=this.Gui.AddListView("x+1 w" (size.1*0.7) " h" (size.2*0.5) " ys " (IsAHK_H?"aw2/3 ah1/2 ax1/3":"") " AltSubmit Checked " this.ReadOnly,"[IsObj] Key/Address|Value/Address| ItemID")
+		,LV:=this.LV:=this.Gui.AddListView("x+1 w" (size.1*0.7) " h" (size.2*0.5) " ys " (IsAHK_H?"aw2/3 ah1/2 ax1/3":"") " AltSubmit Checked " (this.KeyNoEdit?"":this.ReadOnly),"[IsObj] Key/Address|Value/Address| ItemID")
 		,fun:=this.TVSelect.Bind(this,LV),	TV.OnEvent("ItemSelect",fun) ,LV.ModifyCol(3,"0")
 		,fun:=this.LVSelect.Bind(this,TV),	LV.OnEvent("Click",fun)
 		,fun:=this.LVDoubleClick.Bind(this,TV),	LV.OnEvent("DoubleClick",fun)
 		,fun:=this.LVEdit.Bind(this,TV),	LV.OnEvent("ItemEdit",fun)
 		,fun:=this.LVCheck.Bind(this,TV),	LV.OnEvent("ItemCheck",fun)
-		,EditKey:=this.EditKey:=this.Gui.AddEdit("y+1 w" (size.1*0.7) " h" (size.2*0.11) (IsAHK_H?" axr aw2/3 ah1/5 ax1/3 ay1/2 +HScroll":"") " " this.ReadOnly " " Edit)
+		,EditKey:=this.EditKey:=this.Gui.AddEdit("y+1 w" (size.1*0.7) " h" (size.2*0.11) (IsAHK_H?" axr aw2/3 ah1/5 ax1/3 ay1/2 +HScroll":"") " " (this.KeyNoEdit?"":this.ReadOnly) " " Edit)
 		,EditKey.Enabled:=false,	fun:=this.EditKeyEdit.Bind(this,TV,LV),EditKey.OnEvent("Change",fun)
 		,EditValue:=this.EditValue:=this.Gui.AddEdit("y+1 w" (size.1*0.7) " h" (size.2*0.39) (IsAHK_H?" axr aw2/3 ah3/10 ax1/3 ay1/5 +HScroll":"") " " this.ReadOnly " " Edit)
 		,EditValue.Enabled:=false,	fun:=this.EditValueEdit.Bind(this,TV,LV),EditValue.OnEvent("Change",fun)
@@ -57,7 +64,7 @@ Class _ObjTree {
 			,ObjTree_Attach(EditKey.hwnd,"w2/2 h1/5 x1/3 y1/2")
 			,ObjTree_Attach(EditValue.hwnd,"w2/2 h3/10 x1/3 y1/5")
 		}
-		this.Tooltip:=ToolTip,	fun:=this.TVContextMenu.Bind(this),		this.TV.OnEvent("ContextMenu",fun),		this.gui.Show(GuiShow)
+		this.Tooltip:=ToolTip,	fun:=this.TVContextMenu.Bind(this),		this.TV.OnEvent("ContextMenu",fun),		this.gui.Show(this.GuiShow)
 		,this.WM_Notify:=this.Notify.Bind(this,TV),	OnMessage(78,this.WM_Notify) ;WM_NOTIFY
 	}
 	IsAHK_H() {   ; Written by SKAN, modified by HotKeyIt
@@ -184,10 +191,21 @@ Class _ObjTree {
 		Loop this.ReadOnlyLevel
 			if !TV_Item:=TV.GetParent(TV_Item?TV_Item:TV.GetSelection())
 				Return MsgBox("New Items can be inserted only from level " this.ReadOnlyLevel "!")
-		if !parent:=TV.GetParent(obj:=TV.GetSelection())
-			item:=this.newObj.Push(obj:=[]),this.items[obj]:=TV.Add(item,,"Sort"),this.items[this.items[obj]]:=obj
-		else
-			this.Items[item:=this.TV.Add(k:=this.Items[obj].Push(""),parent,"Sort")]:=this.Items[obj]
+		if !parent:=TV.GetParent(obj:=TV.GetSelection()){
+			newItem:=InputBox("Enter the name for new item","New item","w340 h130",this.newObj.Push()+1)
+			if ErrorLevel
+				return
+			if this.newObj.HasKey(newItem)
+				return MsgBox("Item " newItem " already exists!")
+			item:=this.newObj[newItem]:="",TV.Add(newItem,,"Sort")
+		} else {
+			newItem:=InputBox("Enter the name for new item","New item","w340 h130",this.Items[obj].Push()+1)
+			if ErrorLevel
+					return
+			if this.Items[obj].HasKey(newItem)
+				return MsgBox("Item " newItem " already exists!")
+			this.Items[obj,newItem]:="",this.Items[this.TV.Add(newItem,parent,"Sort")]:=this.Items[obj]
+		}
 		this.changed:=1
 	}
 	TVInsertChild(TV){
@@ -195,12 +213,21 @@ Class _ObjTree {
 			if !TV_Item:=TV.GetParent(TV_Item?TV_Item:TV.GetSelection())
 				Return MsgBox("New Items can be inserted only from level " this.ReadOnlyLevel "!")
 		this.gui.Opt("+OwnDialogs")
-		if !IsObject(v:=this.items[parent:=TV.GetSelection(),k:=TV.GetText(parent)]){
-			if "Yes"=MsgBox(k " is not an object, would you like to convert it to object?",,4)
-				this.Items[parent,k]:=obj:={(k):v},this.Items[obj]:=TV.Add(k,parent,"Sort")
-			else Return
-		} else
-			this.Items[item:=TV.Add(this.Items[parent,k].Push(""),parent,"Sort")]:=this.Items[parent,k]
+		if !IsObject(obj:=this.items[parent:=TV.GetSelection(),k:=TV.GetText(parent)]){
+			if "Yes"=MsgBox(k " is not an object, would you like to convert it to object?",,4){
+				newItem:=InputBox("Enter the name for new item","New item","w340 h130",1)
+				if ErrorLevel
+					return
+				this.Items[parent,k]:=obj:={(newItem):obj},this.Items[obj]:=TV.Add(newItem,parent,"Sort"),this.Items[this.Items[obj]]:=obj
+			} else Return
+		} else {
+			newItem:=InputBox("Enter the name for new item","New item","w340 h130",obj.Push()+1)
+			if ErrorLevel
+					return
+			if obj.HasKey(newItem)
+				return MsgBox("Item " newItem " already exists!")
+			obj[newItem]:="",this.Items[item:=TV.Add(newItem,parent,"Sort")]:=obj
+		}
 		this.changed:=1
 	}
 	TVDelete(TV){
@@ -261,7 +288,7 @@ Class _ObjTree {
 			LV.Add(((IsObject(v)||IsObject(k))?"Check":"") (text=(IsObject(k)?(Chr(177) " " (&k)):k)?(LV_CurrRow:=A_Index," Select"):"")
 						,IsObject(k)?(Chr(177) " " (&k)):k,IsObject(v) && IsFunc(v)?"[" (v.IsBuiltIn?"BuildIn ":"") (v.IsVariadic?"Variadic ":"") "Func] " v.Name:IsObject(v)?(Chr(177) " " (&v)):v,item)
 			If (LV_CurrRow=A_Index)
-				LV.Modify(LV_CurrRow,"Vis Select"),	this.EditValue.Enabled:=!IsObject(v)&&!ReadOnly,	this.EditValue.Text:=v,	this.EditKey.Enabled:=!IsObject(k)&&!ReadOnly,	this.EditKey.Text:=k
+				LV.Modify(LV_CurrRow,"Vis Select"),	this.EditValue.Enabled:=!IsObject(v)&&!ReadOnly,	this.EditValue.Text:=v,	this.EditKey.Enabled:=!IsObject(k)&&!ReadOnly&&!this.KeyNoEdit,	this.EditKey.Text:=k
 		}
 		Loop 2
 			LV.ModifyCol(A_Index,"AutoHdr") ;autofit contents
@@ -288,7 +315,7 @@ Class _ObjTree {
 		Loop this.ReadOnlyLevel
 			if !TV_Item:=TV.GetParent(TV_Item?TV_Item:TV.GetSelection())
 				ReadOnly:=1
-		this.EditKey.Enabled:=!ReadOnly,	this.EditKey.Text:=LV.GetText(item)
+		this.EditKey.Enabled:=!ReadOnly&&!this.KeyNoEdit,	this.EditKey.Text:=LV.GetText(item)
 		if !IsObject(this.items[id,LV.GetText(item)]){
 			this.EditValue.Enabled:=!ReadOnly,	this.EditValue.Text:=this.items[id,LV.GetText(item)]
 		} else this.EditValue.Text:="",this.EditValue.Enabled:=false
